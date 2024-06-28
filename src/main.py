@@ -132,13 +132,29 @@ class Maze(object):
     def isTrap(self, coords):
         return self.grid[coords.y][coords.x] == 'h'
 
-    # Checks if maze is simple. (No traps)
-    def isSimple(self):
+    # Benchmarks diffuclty of current maze.
+    # 1: Simple, no traps.
+    # 2: Traps, but clear path to exit.
+    # 3: No clear path to exit.
+    def determineLevel(self):
+        trapsPresent = False
+        mazeWithoutTrap = copy.deepcopy(self)
         for y in range(self.HEIGHT):
             for x in range(self.WIDTH):
                 if self.grid[y][x] == 'h':
-                    return False
-        return True
+                    trapsPresent = True
+                    mazeWithoutTrap.grid[y][x] = ' '
+        
+        if mazeWithoutTrap.findShortestPathSimple(None, Branch(actions=[], currentPos=self.startCoords), self.startCoords, self.escapeCoords) is None:
+            # If it is not solvable, even without traps
+            return 3
+        else:
+            if trapsPresent:
+                # it is solvable, but there are traps
+                return 2
+            else:
+                # easy-peasy
+                return 1
 
     # Counts the number of paths leading to a point
     def countPaths(self, coords):
@@ -186,15 +202,7 @@ class Maze(object):
                 return midPoint
         return None
 
-    def findShortestPathSimple(self, par=None, startBranch=None, startCoords=None, endCoords=None):
-        # Use start and escape points of maze as default
-        if startBranch is None:
-            if startCoords is None:
-                startCoords = self.startCoords
-            startBranch = Branch(actions=[], currentPos=startCoords)
-        if endCoords is None:
-            endCoords = self.escapeCoords
-        
+    def findShortestPathSimple(self, par, startBranch, endCoords):       
         # Only information in the beginning is how to reach the start.
         branches = [startBranch]
 
@@ -226,18 +234,7 @@ class Maze(object):
                             continue
                         if existingBranch.currentPos == newPos:
                             neverBeenVisited=False
-                            # BFS, existing paths are always shorter
-                            """
-                            if len(newActions) < len(existingBranch.actions):
-                                if DEBUG_MODE:
-                                    print("Position already reached:")
-                                    print("Coords: ", str(newPos))
-                                    print("Previously: ", str(len(existingBranch.actions)))
-                                    print("Now: ", str(len(newActions)))
-                                branches.append(Branch(newActions, newPos))
-                                branches.remove(existingBranch)
-                                anyImprovement = True
-                            """
+
                     if neverBeenVisited:
                         if DEBUG_MODE:
                             print("New position reached:")
@@ -250,23 +247,13 @@ class Maze(object):
         if DEBUG_MODE:
             print("Oh no...No branches are reaching the end coordinates")
 
-    def findShortestPathComplex(self, par=None, startBranch=None, startCoords=None, endCoords=None):
-        # Use start and escape points of maze as default
-        if startBranch is None:
-            if startCoords is None:
-                startCoords = self.startCoords
-            startBranch = Branch(actions=[], currentPos=startCoords)
-        if endCoords is None:
-            endCoords = self.escapeCoords
-
+    def findShortestPathComplex(self, par, startBranch, endCoords):
         # Only information in the beginning is that start can be reached in 0 steps.
         branches = [startBranch]
 
-        # Try to find a simple solution, so we have something if complex fails:
-        simpleBranch = self.findShortestPathSimple(par, startBranch, startCoords, endCoords)
+        # Try to find a simple solution, to set a par:
+        simpleBranch = self.findShortestPathSimple(par, startBranch, endCoords)
         if simpleBranch:
-            if self.isSimple():
-                return simpleBranch
             branches.append(simpleBranch)
             if par:
                 par = min(par, len(simpleBranch.actions))
@@ -314,7 +301,7 @@ class Maze(object):
                         preActions = branch.actions.copy()
                         preActions.append(step)
                         preBranch = Branch(actions=preActions, currentPos=mazeWithoutTrap.startCoords)
-                        newBranch = mazeWithoutTrap.findShortestPathComplex(par, startBranch = preBranch)
+                        newBranch = mazeWithoutTrap.findShortestPath(par, startBranch = preBranch, endCoords=endCoords)
                         # If maze without trap is solvable
                         if newBranch:
                             if DEBUG_MODE:
@@ -376,6 +363,147 @@ class Maze(object):
         if DEBUG_MODE:
             print("Oh no...No branches are reaching the end coordinates under par")
 
+    def findShortestPathVeryComplex(self, par, startBranch, endCoords):
+        # Only information in the beginning is that start can be reached in 0 steps.
+        branches = [startBranch]
+
+        # Try to find a complex solution, to set a par:
+        parBranch = self.findShortestPathComplex(par, startBranch, endCoords)
+        if parBranch:
+            branches.append(parBranch)
+            if par:
+                par = min(par, len(parBranch.actions))
+            else:
+                par = len(parBranch.actions)
+
+        # Flags to indicate status
+        anyImprovement = True
+
+        # Update every branch with new moves
+        while(anyImprovement):
+            # If time limit is reached, return best so far:
+            if time.time() - start_time > TIME_LIMIT:
+                if DEBUG_MODE:
+                    print("Time's up, here's the best so far:")
+                return min([branch for branch in branches if branch.currentPos==endCoords], key=lambda x: len(x.actions))
+
+            # Reset flag every iteration
+            anyImprovement = False
+
+            # Update all branches
+            for branch in branches[:]:
+                # If branch has already finished, no need to update
+                if branch.currentPos == endCoords:
+                    continue
+                
+                # If branch is already longer than par, no need to update
+                if par:
+                    if len(branch.actions) >= par:
+                        continue
+                if DEBUG_MODE:
+                    print("par: %d, current: %d" % (par, len(branch.actions)))
+                # Evaluate all valid steps
+                for step in self.findSteps(branch.currentPos):
+
+                    # Check if we cross or land on a trap:
+                    trapCoords = self.detectTrap(branch.currentPos, step)
+                    if trapCoords:
+                        # Simulate what would happen if we walked into it:
+                        mazeWithoutTrap = copy.deepcopy(self)
+                        mazeWithoutTrap.grid[trapCoords.y][trapCoords.x] = ' '
+                        if DEBUG_MODE:
+                            print("Branching, alternative maze looks like this:")
+                            mazeWithoutTrap.print()
+                        preActions = branch.actions.copy()
+                        preActions.append(step)
+                        preBranch = Branch(actions=preActions, currentPos=mazeWithoutTrap.startCoords)
+                        newBranch = mazeWithoutTrap.findShortestPath(par, startBranch = preBranch)
+                        # If maze without trap is solvable
+                        if newBranch:
+                            if DEBUG_MODE:
+                                print("Good news, alternative maze was solved:")
+                                mazeWithoutTrap.print()
+                                print("Steps: ", str(len(newBranch.actions)))
+                                print("Here's the solution:")
+                                print(newBranch.toXml())
+                            newPos = newBranch.currentPos
+                            newActions = newBranch.actions.copy()
+                        else:
+                            if DEBUG_MODE:
+                                print("Oh no, solving the alternative maze was not possible, not sure what to do now")
+                            continue
+                    else:
+                        newPos = branch.currentPos + step
+                        newActions = branch.actions.copy()
+                        newActions.append(step)
+                    
+                    # Try to find new position in positions that are already reached
+                    neverBeenVisited=True
+                    for existingBranch in branches[:]:
+                        # Do not try to improve current branch, as it will lead to skipped steps
+                        if branch is existingBranch:
+                            continue
+                        if existingBranch.currentPos == newPos:
+                            neverBeenVisited=False
+                            # If new path is shorter, replace the existing one
+                            if len(newActions) < len(existingBranch.actions):
+                                if False and DEBUG_MODE:
+                                    print("Position already reached:")
+                                    print("Coords: ", str(newPos))
+                                    print("Previously: ", str(len(existingBranch.actions)))
+                                    print("Now: ", str(len(newActions)))
+                                branches.append(Branch(newActions, newPos))
+                                branches.remove(existingBranch)
+                                anyImprovement = True
+
+                    if neverBeenVisited:
+                        if False and DEBUG_MODE:
+                            print("New position reached:")
+                            print("Coords: ", str(newPos))
+                            print("Steps: ", str(len(newActions)))
+                        branches.append(Branch(newActions, newPos))
+                        anyImprovement = True
+                    
+                    # Update par
+                    if newPos == endCoords:
+                        if par:
+                            par = min(par, len(newActions))
+                        else:
+                            par = len(newActions)
+                       
+
+        for branch in branches:
+            if branch.currentPos == endCoords:
+                return branch
+
+        if DEBUG_MODE:
+            print("Oh no...No branches are reaching the end coordinates under par")
+
+    def findShortestPath(self, par=None, startBranch=None, startCoords=None, endCoords=None):
+        # Use start and escape points of maze as default
+        if startBranch is None:
+            if startCoords is None:
+                startCoords = self.startCoords
+            startBranch = Branch(actions=[], currentPos=startCoords)
+        if endCoords is None:
+            endCoords = self.escapeCoords
+        
+        # If more difficult than expected level, it's unsolvable
+        level = self.determineLevel()
+        if level > self.level:
+            if DEBUG_MODE:
+                print("Too difficult for this level, unsolvable.")
+            return None
+        if level==3:
+            if DEBUG_MODE:
+                print("Very difficult, not yet implemented")
+            return self.findShortestPathVeryComplex(par, startBranch, startCoords, endCoords)
+        if level==2:
+            return self.findShortestPathComplex(par, startBranch, startCoords, endCoords)
+        if level==1:
+            return self.findShortestPathSimple(par, startBranch, startCoords, endCoords)
+            
+
 # Init maze from command line argument
 maze = Maze(sys.argv[1])
-print(maze.findShortestPathComplex().toXml())
+print(maze.findShortestPath().toXml())
