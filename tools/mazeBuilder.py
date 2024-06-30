@@ -6,25 +6,25 @@ WIDTH = 17
 HEIGHT = 17
 
 level = 2
-name = "trap_not_shortcut"
+name = "trap_hard"
 
 maze = ("xsxxxxxxxxxxxxxxx"
-        "x               x"
-        "xxxxxxxxxxxxxxx x"
-        "x x             x"
-        "x h xxxxxxxxxxxxx"
-        "x x             x"
-        "x xxxxxxxxxxxxx x"
-        "x x             x"
-        "x x xxxxxxxxxxxxx"
-        "x x             x"
-        "x xxxxxxxxxxxxx x"
-        "x x             x"
-        "x h xxxxxxxxxxxxx"
-        "x x             x"
-        "xxxxxxxxxxxxxxx x"
-        "x               x"
-        "xexxxxxxxxxxxxxxx")
+        "x h h   h       x"
+        "x h h   h  h    x"
+        "x h h   h  hh   x"
+        "xxh h   h  h    x"
+        "x   h hhh  h    x"
+        "x h h   h  h h  x"
+        "x h hxxxh  h    x"
+        "x h     h  h   hx"
+        "x h hhh h  h    x"
+        "x h h   h  h  h x"
+        "x h h hhhxxh    x"
+        "x h h      h h  x"
+        "x h h      h  xxx"
+        "x h hhhhhh hx h e"
+        "x h      h h  x x"
+        "xxxxxxxxxxxxxxxxx")
 
 
 def posToCoords(position):
@@ -50,15 +50,15 @@ for y in range(1,HEIGHT-1):
     for x in range(1,WIDTH-1):
         if maze[y*WIDTH + x] == 'x':
             wallElement = ET.SubElement(insideElement, "Wall")
-            ET.SubElement(wallElement, "Row").text = str(x+1)
-            ET.SubElement(wallElement, "Column").text = str(y+1)
+            ET.SubElement(wallElement, "Row").text = str(y+1)
+            ET.SubElement(wallElement, "Column").text = str(x+1)
 
 for y in range(HEIGHT):
     for x in range(WIDTH):
         if maze[y*WIDTH + x] == 'h':
             trapElement = ET.SubElement(insideElement, "Trap")
-            ET.SubElement(trapElement, "Row").text = str(x+1)
-            ET.SubElement(trapElement, "Column").text = str(y+1)
+            ET.SubElement(trapElement, "Row").text = str(y+1)
+            ET.SubElement(trapElement, "Column").text = str(x+1)
 
 mazeTree = ET.ElementTree(mazeRoot)
 ET.indent(mazeTree, space="\t")
