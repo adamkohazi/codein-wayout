@@ -1,0 +1,12 @@
+<Maze>
+	<Level>1</Level>
+	<StartPoint>
+		<Row>1</Row>
+		<Column>2</Column>
+	</StartPoint>
+	<EscapePoint>
+		<Row>1</Row>
+		<Column>4</Column>
+	</EscapePoint>
+	<InsideItems />
+</Maze>
