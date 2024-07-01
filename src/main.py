@@ -55,44 +55,16 @@ class District(NamedTuple):
     yMax: int
 
 districts = {
-    1: District( 1,  6,  1,  6),
-    2: District( 6, 11,  1,  6),
-    3: District(11, 16,  1,  6),
-    4: District( 1,  6,  6, 11),
-    5: District( 6, 11,  6, 11),
-    6: District(11, 16,  6, 11),
-    7: District( 1,  6, 11, 16),
-    8: District( 6, 11, 11, 16),
-    9: District(11, 16, 11, 16)
+    1: District( 1,  5,  1,  5),
+    2: District( 6, 10,  1,  5),
+    3: District(11, 15,  1,  5),
+    4: District( 1,  5,  6, 10),
+    5: District( 6, 10,  6, 10),
+    6: District(11, 15,  6, 10),
+    7: District( 1,  5, 11, 15),
+    8: District( 6, 10, 11, 15),
+    9: District(11, 15, 11, 15)
 }
-
-
-
-allRotations = []
-baseRotations = []
-#1
-for district in range(1,10):
-    for direction in (1,2):
-        baseRotations.append(Rotate(district, direction))
-        allRotations.append([Rotate(district, direction)])
-# 2
-doubleRotations = []
-for rot1 in baseRotations:
-    for rot2 in baseRotations:
-        # If same district, only append single 180 rotation
-        if rot1.district == rot2.district:
-            if rot1.direction == rot2.direction == 1:
-                allRotations.append([rot1, rot2])
-                doubleRotations.append([rot1, rot2])
-        else:
-            allRotations.append([rot1, rot2])
-            doubleRotations.append([rot1, rot2])
-# 3
-for d in doubleRotations:
-    for rot in baseRotations:
-        # only append if different districs
-        if (d[0].district != rot.district) and (d[1].district != rot.district):
-            allRotations.append([d[0], d[1], rot])
 
 @dataclass
 class Branch():
@@ -197,8 +169,8 @@ class Maze(object):
     def rotate(self, rotate:Rotate):
         xMin, xMax, yMin, yMax = districts[rotate.district]
         district = [[self.grid[y][x]
-                     for x in range(xMin, xMax)]
-                    for y in range(yMin, yMax)]
+                     for x in range(xMin, xMax+1)]
+                    for y in range(yMin, yMax+1)]
 
         rotatedDistrict = [['' for x in range(5)] for y in range(5)]
         for y in range(5):
@@ -213,6 +185,20 @@ class Maze(object):
         for y in range(5):
             for x in range(5):
                 self.grid[yMin + y][xMin + x] = rotatedDistrict[y][x]
+    
+    def findDistrict(self, coords: Coords) -> int:
+        if coords.x == 0:
+            coords.x += 1
+        if coords.y == 0:
+            coords.y += 1
+        if coords.x == self.WIDTH:
+            coords.x -= 1
+        if coords.y == self.HEIGHT:
+            coords.y -= 1
+        
+        for d, district in districts.items():
+            if coords.x in range(district.xMin, district.xMax+1) and coords.y in range(district.yMin, district.yMax+1):
+                return d
 
     # Checks if a point in the maze is a path. Traps are considered as path, their effect is handled later.
     def isPath(self, coords: Coords):
@@ -423,6 +409,33 @@ class Maze(object):
             print("Oh no...No branches are reaching the end coordinates under par")
 
     def findShortestPathVeryComplex(self, par, startBranch, endCoords):
+        # Setup rotations
+        allRotations = []
+        baseRotations = []
+        #1
+        for district in range(1,10):
+            for direction in (1,2):
+                baseRotations.append(Rotate(district, direction))
+                allRotations.append([Rotate(district, direction)])
+        # 2
+        doubleRotations = []
+        for rot1 in baseRotations:
+            for rot2 in baseRotations:
+                # If same district, only append single 180 rotation
+                if rot1.district == rot2.district:
+                    if rot1.direction == rot2.direction == 1:
+                        allRotations.append([rot1, rot2])
+                        doubleRotations.append([rot1, rot2])
+                else:
+                    allRotations.append([rot1, rot2])
+                    doubleRotations.append([rot1, rot2])
+        # 3
+        for d in doubleRotations:
+            for rot in baseRotations:
+                # only append if different districs
+                if (d[0].district != rot.district) and (d[1].district != rot.district):
+                    allRotations.append([d[0], d[1], rot])
+
         # Try to find a solution without rotation, to set a par:
         solution = self.findShortestPath(par, startBranch, endCoords, level=2)
         if solution:
@@ -471,21 +484,21 @@ class Maze(object):
         if endCoords is None:
             endCoords = self.escapeCoords
         
-        # If more difficult than expected level, it's unsolvable
+        # If more difficult than expected level, it's unsolvable. Pars based on leaderboard results.
         if level is None:
             level = self.determineLevel()
         if level==3:
-            return self.findShortestPathVeryComplex(par, startBranch, endCoords)
+            return self.findShortestPathVeryComplex(31, startBranch, endCoords) #189-91-68 = 30 (28)
         if level==2:
-            return self.findShortestPathComplex(par, startBranch, endCoords)
+            return self.findShortestPathComplex(92, startBranch, endCoords) #91
         if level==1:
-            return self.findShortestPathSimple(par, startBranch, endCoords)
+            return self.findShortestPathSimple(69, startBranch, endCoords) #68
             
 
 # Init maze from command line argument
 maze = Maze(sys.argv[1])
 branch = maze.findShortestPath(level=maze.level)
 print(branch.toXml())
-if DEBUG_MODE:
-    print("Total time: ", str(time.time() - start_time))
-    print("Score: ", branch.score())
+
+print("Total time: ", str(time.time() - start_time))
+print("Score: ", branch.score())

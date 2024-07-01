@@ -5,26 +5,46 @@ import os
 WIDTH = 17
 HEIGHT = 17
 
-level = 2
-name = "trap_hard"
+level = 3
+name = "sim3"
 
-maze = ("xsxxxxxxxxxxxxxxx"
-        "x h h   h       x"
-        "x h h   h  h    x"
-        "x h h   h  hh   x"
-        "xxh h   h  h    x"
-        "x   h hhh  h    x"
-        "x h h   h  h h  x"
-        "x h hxxxh  h    x"
-        "x h     h  h   hx"
-        "x h hhh h  h    x"
-        "x h h   h  h  h x"
-        "x h h hhhxxh    x"
-        "x h h      h h  x"
-        "x h h      h  xxx"
-        "x h hhhhhh hx h e"
-        "x h      h h  x x"
+maze = ("xxxxxxxxxxxxxxxxx"
+        "xxx xx          x"
+        "xxx             x"
+        "xxxxxx          x"
+        "s               x"
+        "xxxxxxxxxxxx    x"
+        "e xxxxxxxxxx    x"
+        "x  xxxxxxxxx    x"
+        "xx              x"
+        "xxxxxxxxxxxx    x"
+        "xxx   xxxxxx    x"
+        "x               x"
+        "x               x"
+        "x               x"
+        "x               x"
+        "x               x"
         "xxxxxxxxxxxxxxxxx")
+
+"""
+maze = ("xxxxxxxxsxxxxxxxx"
+        "xxxxxxxx        x"
+        "xxxxxxxxxxxxxxx x"
+        "x    x     xxxx x"
+        "x xx x xxx xxxx x"
+        "x  x   xxx      x"
+        "xx xxxxxxxxxxxxxx"
+        "x     xxxxxxxxxxx"
+        "x     xxxxxxxxxxx"
+        "x       x  xxxxxx"
+        "x       x  xxxxxx"
+        "x     x   x     x"
+        "x      xxx xxxx x"
+        "x      xxx xxxx x"
+        "x      xxx xxxx x"
+        "x     x         x"
+        "xxxxxxxxexxxxxxxx")
+        """
 
 
 def posToCoords(position):
