@@ -517,65 +517,35 @@ class Maze(object):
         for district in range(1,10):
             for direction in (1,2):
                 baseRotations.append(Rotate(district, direction))
-                allRotations.append([Rotate(district, direction)])
-        """
-        # 2
-        doubleRotations = []
-        for rot1 in baseRotations:
-            for rot2 in baseRotations:
-                # If same district, only append single 180 rotation
-                if rot1.district == rot2.district:
-                    if rot1.direction == rot2.direction == 1:
-                        allRotations.append([rot1, rot2])
-                        doubleRotations.append([rot1, rot2])
-                else:
-                    allRotations.append([rot1, rot2])
-                    doubleRotations.append([rot1, rot2])
-        # 3
-        for d in doubleRotations:
-            for rot in baseRotations:
-                # only append if different districs
-                if (d[0].district != rot.district) and (d[1].district != rot.district):
-                    allRotations.append([d[0], d[1], rot])
-        
-        startDistrict = self.findDistrict(startBranch.currentPos)
-        endDistrict = self.findDistrict(endCoords)
-
-        allRotations.append([
-            Rotate(startDistrict, 1),
-            Rotate(startDistrict, 1),
-            Rotate(endDistrict, 1),
-            Rotate(endDistrict, 1)
-            ])
-        """
 
         # Try to find a solution without rotation, to set a par:
         solution = self.findShortestPath(par, startBranch, endCoords, level=2)
         if solution:
             par = solution.score()
 
-        # Trial and error. No idea how to solve this using logic, so we'll just brute force it.
-        for rotations in allRotations:
-            # Simulate what would happen if we rotated:
-            rotatedMaze = copy.deepcopy(self)
-            for rotation in rotations:
+        for branch in self.mapPaths(par, copy.deepcopy(startBranch)):
+            midPoint = branch.currentPos
+            print(midPoint)
+
+            for rotation in baseRotations:
+                # Simulate what would happen if we rotated:
+                rotatedMaze = copy.deepcopy(self)
                 rotatedMaze.rotate(rotation)
-            preBranch = Branch(rotations, startBranch.currentPos)
+
+                preActions = branch.actions + [rotation]
+                preBranch = Branch(preActions, midPoint)
             
-            # Try to solve it (limit level to 2):
-            newBranch = rotatedMaze.findShortestPathComplex(par, preBranch, endCoords)
-            if newBranch:
-                newScore = newBranch.score()
-                if DEBUG_MODE:
-                    rotatedMaze.print()
-                    print("score: %d" % (newScore))
-                if par:
-                    if newScore < par:
+                # Try to solve it (limit level to 2):
+                newBranch = rotatedMaze.findShortestPathComplex(par, preBranch, endCoords)
+                if newBranch:
+                    newScore = newBranch.score()
+                    if par:
+                        if newScore < par:
+                            solution = newBranch
+                            par = newScore
+                    else:
                         solution = newBranch
                         par = newScore
-                else:
-                    solution = newBranch
-                    par = newScore
 
         return solution
 
@@ -592,12 +562,12 @@ class Maze(object):
         if level is None:
             level = self.determineLevel()
         if level==3:
-            return self.findShortestPathSimple(31, startBranch, endCoords) #30
+            #return self.findShortestPathSimple(31, startBranch, endCoords) #30
             return self.findShortestPathVeryComplex(31, startBranch, endCoords) #189-91-68 = 30
         if level==2:
             return self.findShortestPathComplex(92, startBranch, endCoords) #91
         if level==1:
-            return self.findShortestPathSimple(69, startBranch, endCoords) #68
+            return self.findShortestPathSimple(69, startBranch, endCoords) #68 (likely 66)
             
 
 # Init maze from command line argument
@@ -605,6 +575,7 @@ maze = Maze(sys.argv[1])
 
 branch = maze.findShortestPath(level=maze.level)
 print(branch.toXml())
-#maze.print()
-#print("Total time: ", str(time.time() - start_time))
-#print("Score: ", branch.score())
+
+maze.print()
+print("Total time: ", str(time.time() - start_time))
+print("Score: ", branch.score())
