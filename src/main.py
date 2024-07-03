@@ -8,7 +8,6 @@ import time
 import itertools
 
 DEBUG_MODE = False
-TIME_LIMIT = 5555
 
 start_time = time.time()
 
@@ -187,18 +186,26 @@ class Maze(object):
                 self.grid[yMin + y][xMin + x] = rotatedDistrict[y][x]
     
     def findDistrict(self, coords: Coords) -> int:
-        if coords.x == 0:
-            coords.x += 1
-        if coords.y == 0:
-            coords.y += 1
-        if coords.x == self.WIDTH:
-            coords.x -= 1
-        if coords.y == self.HEIGHT:
-            coords.y -= 1
+        tempCoords = Coords(x=min(max(1, coords.x),self.WIDTH-1), y=min(max(1, coords.y),self.HEIGHT-1))
         
         for d, district in districts.items():
-            if coords.x in range(district.xMin, district.xMax+1) and coords.y in range(district.yMin, district.yMax+1):
+            if tempCoords.x in range(district.xMin, district.xMax+1) and tempCoords.y in range(district.yMin, district.yMax+1):
                 return d
+    
+    def districtBetween(self, districtFrom, districtTo):
+        a = min(districtFrom, districtTo)
+        b = max(districtFrom, districtTo)
+
+        if a==1 and b==3:
+            return 2
+        if a==1 and b==7:
+            return 4
+        if a==3 and b==9:
+            return 6
+        if a==7 and b==9:
+            return 8
+        
+
 
     # Checks if a point in the maze is a path. Traps are considered as path, their effect is handled later.
     def isPath(self, coords: Coords):
@@ -339,7 +346,7 @@ class Maze(object):
                 par = simpleBranch.score()
 
         # Try to find path, until solution is found, or there are no new branches that could finish under par
-        while(any([b.new for b in branches]) and (time.time() - start_time < TIME_LIMIT or DEBUG_MODE)): 
+        while any([b.new for b in branches]): 
             # Only check newly created branches (that have not yet been checked)
             for branch in [b for b in branches if b.new]:
                 # Set to updated
@@ -408,8 +415,8 @@ class Maze(object):
         if DEBUG_MODE:
             print("Oh no...No branches are reaching the end coordinates under par")
 
-    def findShortestPathVeryComplex(self, par, startBranch, endCoords):
-        # Setup rotations
+    def findShortestPathVeryComplex(self, par: int, startBranch: Branch, endCoords: Coords):
+         # Setup rotations
         allRotations = []
         baseRotations = []
         #1
@@ -435,23 +442,25 @@ class Maze(object):
                 # only append if different districs
                 if (d[0].district != rot.district) and (d[1].district != rot.district):
                     allRotations.append([d[0], d[1], rot])
+        
+        startDistrict = self.findDistrict(startBranch.currentPos)
+        endDistrict = self.findDistrict(endCoords)
+        midDistrict = self.districtBetween(startDistrict, endDistrict)
+
+        allRotations.append([
+            Rotate(startDistrict, 1),
+            Rotate(startDistrict, 1),
+            Rotate(endDistrict, 1),
+            Rotate(endDistrict, 1)
+            ])
 
         # Try to find a solution without rotation, to set a par:
         solution = self.findShortestPath(par, startBranch, endCoords, level=2)
         if solution:
             par = solution.score()
-        
-        # Don't bother if it has no chance to be the shortest branch
-        if par:
-            minimumCost = 5 + taxicabDistance(startBranch.currentPos, endCoords)
-            if startBranch.score() + minimumCost > par:
-                return solution
 
         # Trial and error. No idea how to solve this using logic, so we'll just brute force it.
         for rotations in allRotations:
-            if time.time() - start_time > TIME_LIMIT:
-                return solution
-
             # Simulate what would happen if we rotated:
             rotatedMaze = copy.deepcopy(self)
             for rotation in rotations:
@@ -497,8 +506,10 @@ class Maze(object):
 
 # Init maze from command line argument
 maze = Maze(sys.argv[1])
+
 branch = maze.findShortestPath(level=maze.level)
 print(branch.toXml())
 
+maze.print()
 print("Total time: ", str(time.time() - start_time))
 print("Score: ", branch.score())

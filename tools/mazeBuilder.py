@@ -6,45 +6,25 @@ WIDTH = 17
 HEIGHT = 17
 
 level = 3
-name = "sim3"
+name = "tricky2"
 
-maze = ("xxxxxxxxxxxxxxxxx"
-        "xxx xx          x"
-        "xxx             x"
-        "xxxxxx          x"
-        "s               x"
-        "xxxxxxxxxxxx    x"
-        "e xxxxxxxxxx    x"
-        "x  xxxxxxxxx    x"
-        "xx              x"
-        "xxxxxxxxxxxx    x"
-        "xxx   xxxxxx    x"
-        "x               x"
-        "x               x"
-        "x               x"
-        "x               x"
-        "x               x"
-        "xxxxxxxxxxxxxxxxx")
-
-"""
-maze = ("xxxxxxxxsxxxxxxxx"
-        "xxxxxxxx        x"
-        "xxxxxxxxxxxxxxx x"
-        "x    x     xxxx x"
-        "x xx x xxx xxxx x"
-        "x  x   xxx      x"
-        "xx xxxxxxxxxxxxxx"
-        "x     xxxxxxxxxxx"
-        "x     xxxxxxxxxxx"
-        "x       x  xxxxxx"
-        "x       x  xxxxxx"
-        "x     x   x     x"
-        "x      xxx xxxx x"
-        "x      xxx xxxx x"
-        "x      xxx xxxx x"
-        "x     x         x"
-        "xxxxxxxxexxxxxxxx")
-        """
+maze = ("xxxxxxxxxxsxxxxxx"
+        "xxxxxxxxxx xxxxxx"
+        "xx         xxxxxx"
+        "xx xxxxxxx xxxxxx"
+        "xx xxxxxxx xxxxxx"
+        "xx xxxxxxx xxxxxx"
+        "xx xxx xxxx xxxxx"
+        "xx xxxxxxxx xxxxx"
+        "xx xxxxxxxx xxxxx"
+        "xx xxxxxxxx xxxxx"
+        "xx xxxxxxxx xxxxx"
+        "xx xxxxxxx xxxxxx"
+        "xx xxxxxxx xxxxxx"
+        "xx xxxxxxx xxxxxx"
+        "xx         xxxxxx"
+        "xxxxxxxxxx xxxxxx"
+        "xxxxxxxxxxexxxxxx")
 
 
 def posToCoords(position):
